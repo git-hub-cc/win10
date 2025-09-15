@@ -1,13 +1,14 @@
 /*
  * ===================================================================
- *  WebDesk 10 - Window Class (Window.js) - V3.3 Final (Logic Fix)
+ *  WebDesk 10 - Window Class (Window.js) - V4.0 (Feature Update)
  * ===================================================================
- *  - FIX: Refined drag logic for snapped/maximized windows to eliminate
- *    cursor jumping, perfectly matching native OS behavior.
- *  - FEATURE: Integrated Aero Snap preview during window drag.
+ *  - FEATURE: Added render logic for the new 'settings' app type.
+ *  - FEATURE: Reworked 'file-explorer' rendering to support nested folders
+ *    and breadcrumb navigation.
+ *  - FIX: Refined drag logic for snapped/maximized windows.
  */
 
-import { apps } from './config.js';
+import { apps, UI_TEXT, THEME_OPTIONS } from './config.js';
 
 const MIN_WIN_WIDTH = 250;
 const MIN_WIN_HEIGHT = 150;
@@ -27,7 +28,10 @@ export default class Window {
         this.isMinimized = false;
         this.preMaximizeState = {};
         this.preSnapState = {};
-        this.currentView = null;
+
+        // --- File Explorer State ---
+        this.currentView = null; // e.g., 'favorites', 'my-collection'
+        this.fePath = []; // For navigating subfolders e.g., ['ppmc-sites']
 
         // --- DOM Elements ---
         this.element = null;
@@ -55,10 +59,18 @@ export default class Window {
         this.element.className = 'window-component';
         this.element.style.top = `${50 + (window.getWindowCount() % 10) * 30}px`;
         this.element.style.left = `${100 + (window.getWindowCount() % 10) * 30}px`;
-        this.element.style.width = this.appData.type === 'iframe' ? '800px' : '600px';
-        this.element.style.height = this.appData.type === 'iframe' ? '600px' : '400px';
 
-        const altBg = this.appData.type === 'file-explorer' ? 'true' : 'false';
+        let initialWidth = '600px', initialHeight = '400px';
+        if (this.appData.type === 'iframe') {
+            initialWidth = '800px';
+            initialHeight = '600px';
+        } else if (this.appData.type === 'settings') {
+            initialWidth = '720px';
+            initialHeight = '550px';
+        }
+        this.element.style.width = initialWidth;
+        this.element.style.height = initialHeight;
+
 
         this.element.innerHTML = `
             <div class="title-bar">
@@ -70,7 +82,7 @@ export default class Window {
                     <button class="close" title="关闭"><i class="fas fa-times"></i></button>
                 </div>
             </div>
-            <div class="window-body" data-alt-bg="${altBg}"></div>
+            <div class="window-body"></div>
             ${['t', 'b', 'l', 'r', 'tl', 'tr', 'bl', 'br'].map(h => `<div class="resize-handle ${h}" data-direction="${h}"></div>`).join('')}
         `;
         this.renderBodyContent();
@@ -78,23 +90,23 @@ export default class Window {
 
     renderBodyContent() {
         const body = this.element.querySelector('.window-body');
-        body.innerHTML = '';
-        body.className = 'window-body';
+        body.innerHTML = ''; // Clear previous content
 
         switch (this.appData.type) {
             case 'iframe': this.renderIframe(body); break;
             case 'file-explorer': this.renderFileExplorer(body); break;
+            case 'settings': this.renderSettings(body); break;
             default: this.renderText(body);
         }
     }
 
     renderText(body) {
-        body.classList.add('text-content-body');
+        body.className = 'window-body text-content-body';
         body.innerHTML = this.appData.content;
     }
 
     renderIframe(body) {
-        body.classList.add('iframe-container');
+        body.className = 'window-body iframe-container';
         const loader = document.createElement('div');
         loader.className = 'iframe-loader';
         loader.innerHTML = '<i class="fas fa-spinner"></i>';
@@ -117,11 +129,65 @@ export default class Window {
         });
     }
 
+    renderSettings(body) {
+        body.className = 'window-body settings-body';
+
+        const currentWallpaper = localStorage.getItem('webdesk-wallpaper') || THEME_OPTIONS.wallpapers[0].url;
+        const currentThemeColor = localStorage.getItem('webdesk-theme-color') || THEME_OPTIONS.colors[0];
+
+        body.innerHTML = `
+            <div class="settings-section">
+                <h3>${UI_TEXT.background}</h3>
+                <p>${UI_TEXT.selectWallpaper}</p>
+                <div class="wallpaper-picker">
+                    ${THEME_OPTIONS.wallpapers.map(wp => `
+                        <div class="wallpaper-thumb ${wp.url === currentWallpaper ? 'active' : ''}" 
+                             data-wallpaper-url="${wp.url}" 
+                             style="background-image: url('${wp.url}')">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>${UI_TEXT.colors}</h3>
+                <p>${UI_TEXT.selectThemeColor}</p>
+                <div class="theme-picker">
+                    ${THEME_OPTIONS.colors.map(color => `
+                        <div class="theme-color-box ${color === currentThemeColor ? 'active' : ''}" 
+                             data-color="${color}" 
+                             style="background-color: ${color}">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        body.querySelectorAll('.wallpaper-thumb').forEach(thumb => {
+            thumb.addEventListener('click', () => {
+                const url = thumb.dataset.wallpaperUrl;
+                window.setWallpaper(url);
+                body.querySelector('.wallpaper-thumb.active')?.classList.remove('active');
+                thumb.classList.add('active');
+            });
+        });
+
+        body.querySelectorAll('.theme-color-box').forEach(box => {
+            box.addEventListener('click', () => {
+                const color = box.dataset.color;
+                window.setThemeColor(color);
+                body.querySelector('.theme-color-box.active')?.classList.remove('active');
+                box.classList.add('active');
+            });
+        });
+    }
+
     renderFileExplorer(body) {
+        body.className = 'window-body';
         if (!this.currentView) {
             this.currentView = Object.keys(this.appData.content)[0];
         }
 
+        // --- Sidebar ---
         const sidebar = document.createElement('div');
         sidebar.className = 'sidebar';
         for (const key in this.appData.content) {
@@ -132,32 +198,94 @@ export default class Window {
             itemEl.innerHTML = `<i class="${viewData.icon}"></i><span>${viewData.sidebarName}</span>`;
             itemEl.addEventListener('click', () => {
                 this.currentView = key;
+                this.fePath = []; // Reset path when changing view
                 this.renderBodyContent();
             });
             sidebar.appendChild(itemEl);
         }
 
+        // --- Main Content ---
         const mainContent = document.createElement('div');
         mainContent.className = 'main-content';
-        const contentGrid = document.createElement('div');
-        contentGrid.className = 'file-explorer-content';
 
-        this.appData.content[this.currentView].items.forEach(item => {
-            const itemEl = document.createElement('div');
-            itemEl.className = 'file-item';
-            itemEl.title = item.name;
-            itemEl.innerHTML = `<i class="${item.icon}"></i><span>${item.name}</span>`;
-            itemEl.addEventListener('dblclick', () => {
-                if (item.type === 'app-link') window.openApp(item.appId);
-                else if (item.type === 'external-link') window.open(item.url, '_blank');
+        // --- Breadcrumbs ---
+        const breadcrumbs = document.createElement('div');
+        breadcrumbs.className = 'fe-breadcrumbs';
+        this.renderBreadcrumbs(breadcrumbs);
+        mainContent.appendChild(breadcrumbs);
+
+        // --- File Grid ---
+        const contentGrid = document.createElement('div');
+        contentGrid.className = 'file-explorer-grid';
+
+        const currentNode = this.getCurrentFeNode();
+        if (currentNode && currentNode.items) {
+            currentNode.items.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'file-item';
+                itemEl.title = item.name;
+                itemEl.innerHTML = `<i class="${item.icon}"></i><span>${item.name}</span>`;
+
+                itemEl.addEventListener('dblclick', () => {
+                    if (item.type === 'folder') {
+                        this.fePath.push(item.id);
+                        this.renderBodyContent();
+                    } else if (item.type === 'app-link') {
+                        window.openApp(item.appId);
+                    } else if (item.type === 'external-link') {
+                        window.open(item.url, '_blank');
+                    }
+                });
+                contentGrid.appendChild(itemEl);
             });
-            contentGrid.appendChild(itemEl);
-        });
+        }
 
         mainContent.appendChild(contentGrid);
         body.appendChild(sidebar);
         body.appendChild(mainContent);
     }
+
+    renderBreadcrumbs(container) {
+        container.innerHTML = '';
+        const rootCrumb = document.createElement('span');
+        rootCrumb.className = 'breadcrumb-item';
+        rootCrumb.textContent = this.appData.content[this.currentView].sidebarName;
+        rootCrumb.addEventListener('click', () => {
+            this.fePath = [];
+            this.renderBodyContent();
+        });
+        container.appendChild(rootCrumb);
+
+        let currentPathNode = this.appData.content[this.currentView];
+        this.fePath.forEach((pathId, index) => {
+            const separator = document.createElement('span');
+            separator.className = 'breadcrumb-separator';
+            separator.textContent = '>';
+            container.appendChild(separator);
+
+            currentPathNode = currentPathNode.items.find(item => item.id === pathId);
+            if (!currentPathNode) return;
+
+            const pathCrumb = document.createElement('span');
+            pathCrumb.className = 'breadcrumb-item';
+            pathCrumb.textContent = currentPathNode.name;
+            pathCrumb.addEventListener('click', () => {
+                this.fePath = this.fePath.slice(0, index + 1);
+                this.renderBodyContent();
+            });
+            container.appendChild(pathCrumb);
+        });
+    }
+
+    getCurrentFeNode() {
+        let node = this.appData.content[this.currentView];
+        for (const pathId of this.fePath) {
+            node = node.items.find(item => item.id === pathId);
+            if (!node) return null;
+        }
+        return node;
+    }
+
 
     createTaskbarIcon() {
         this.taskbarIcon = document.createElement('div');
@@ -208,29 +336,20 @@ export default class Window {
             let initialTop = this.element.offsetTop;
             let initialLeft = this.element.offsetLeft;
 
-            // --- LOGIC FIX: Smooth drag from maximized/snapped state ---
             if (this.isMaximized || this.isSnapped) {
-                // 1. Calculate the mouse's offset within the title bar BEFORE resizing the window
                 const grabOffsetX = e.clientX - initialLeft;
-
-                // 2. Restore window to its original size (this also resets its top/left)
                 if(this.isMaximized) this.unmaximize();
                 if(this.isSnapped) this.unsnap();
-
-                // 3. Recalculate the window's top/left so the cursor maintains its relative position
                 initialLeft = e.clientX - grabOffsetX;
-                initialTop = e.clientY - (e.offsetY); // offsetY is more reliable for title bar height
-
+                initialTop = e.clientY - (e.offsetY);
                 this.element.style.left = `${initialLeft}px`;
                 this.element.style.top = `${initialTop}px`;
             }
-            // --- END OF FIX ---
 
             this.element.classList.add('is-dragging');
             document.body.classList.add('is-interacting');
             const initialMouseX = e.clientX;
             const initialMouseY = e.clientY;
-
             let currentSnapZone = null;
 
             const onMouseMove = (moveEvent) => {
@@ -246,11 +365,7 @@ export default class Window {
 
                 if (newSnapZone !== currentSnapZone) {
                     currentSnapZone = newSnapZone;
-                    if (currentSnapZone) {
-                        window.showSnapPreview(currentSnapZone);
-                    } else {
-                        window.hideSnapPreview();
-                    }
+                    currentSnapZone ? window.showSnapPreview(currentSnapZone) : window.hideSnapPreview();
                 }
             };
 
@@ -260,7 +375,6 @@ export default class Window {
                 document.body.classList.remove('is-interacting');
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
-
                 this.handleAeroSnap(upEvent.clientX, upEvent.clientY);
             };
 
@@ -283,9 +397,7 @@ export default class Window {
         this.element.querySelectorAll('.resize-handle').forEach(handle => {
             handle.addEventListener('mousedown', (e) => {
                 e.preventDefault(); e.stopPropagation();
-
                 if (this.isMaximized || this.isSnapped) return;
-
                 this.element.classList.add('is-resizing');
                 document.body.classList.add('is-interacting');
                 document.body.style.cursor = getComputedStyle(handle).cursor;

@@ -45,7 +45,6 @@
 
 <!-- Start Menu: Hidden by default -->
 <div class="start-menu" id="start-menu">
-    <!-- NEW: Left sidebar for user/power controls -->
     <div class="start-menu-sidebar">
         <div class="start-menu-header">
             <i class="fas fa-user-circle profile-icon"></i>
@@ -56,10 +55,22 @@
             <span>电源</span>
         </div>
     </div>
-    <!-- NEW: Main content area for pinned tiles -->
     <div class="start-menu-main">
         <!-- Pinned App Tiles: Will be populated by JS -->
         <div class="start-menu-pinned" id="start-menu-pinned"></div>
+    </div>
+</div>
+
+<!-- NEW: System Tray Flyout (e.g., Calendar) -->
+<div id="calendar-flyout">
+    <div class="flyout-header">
+        <span id="flyout-day"></span>
+        <span id="flyout-full-date"></span>
+    </div>
+    <div class="flyout-calendar">
+        <!-- A simple placeholder for a calendar view -->
+        <p>这是一个日历面板的占位符。</p>
+        <p>您可以在这里实现一个真正的日历组件。</p>
     </div>
 </div>
 

@@ -1,9 +1,11 @@
 /*
  * ===================================================================
- *  WebDesk 10 - Stylesheet (style.css) - V3.2 Final (Feature Update)
+ *  WebDesk 10 - Stylesheet (style.css) - V4.0 (Major Feature Update)
  * ===================================================================
- *  - BUGFIX: Defined the missing '--win10-icon-color' CSS variable.
- *  - FEATURE: Added styles for Aero Snap preview effect.
+ *  - FEATURE: Added styles for draggable desktop icons.
+ *  - FEATURE: Added styles for the System Tray flyout panel.
+ *  - FEATURE: Added styles for the new Settings App window.
+ *  - FEATURE: Added styles for File Explorer breadcrumbs.
  */
 
 /* --- Global Resets & Base Styles --- */
@@ -29,7 +31,7 @@ body { margin: 0; padding: 0; overflow: hidden; font-family: var(--segoe-ui); ba
 body.is-interacting * { user-select: none !important; cursor: inherit !important; }
 *, *:before, *:after { box-sizing: inherit; }
 
-/* --- Login Screen (New) --- */
+/* --- Login Screen --- */
 #login-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-image: url('img/img.png');
@@ -47,13 +49,17 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 /* --- Desktop & Taskbar --- */
 .desktop-wrapper, .taskbar, .start-menu { opacity: 0; transition: opacity 0.5s ease-in; }
 .desktop-wrapper.visible, .taskbar.visible, .start-menu.visible { opacity: 1; }
-.desktop-wrapper { position: relative; width: 100vw; height: 100vh; background-size: cover; background-position: center; overflow: hidden; }
+.desktop-wrapper { position: relative; width: 100vw; height: 100vh; background-size: cover; background-position: center; overflow: hidden; transition: background-image 0.5s ease-in-out; }
 .desktop-icons-grid { position: absolute; top: 10px; left: 10px; display: grid; grid-template-columns: repeat(auto-fill, 96px); grid-auto-rows: 96px; gap: 4px; padding: 10px; z-index: 10; }
 .desktop-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; padding: 8px; border-radius: var(--win10-border-radius); transition: background-color 0.1s; border: 1px solid transparent; }
 .desktop-icon:hover { background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); }
 .desktop-icon.selected { background-color: rgba(0, 120, 212, 0.4); border: 1px solid var(--win10-accent); }
 .desktop-icon .icon { font-size: 32px; margin-bottom: 8px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none; }
 .desktop-icon .label { font-size: 12px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); line-height: 1.3; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; pointer-events: none;}
+/* NEW: Styles for drag-and-drop */
+.desktop-icon.is-dragging { opacity: 0.5; border: 1px dashed white; }
+.desktop-icon.drag-over { background-color: rgba(255, 255, 255, 0.3); }
+
 .taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 48px; background: var(--win10-taskbar-bg); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); display: flex; align-items: center; padding: 0 8px; z-index: 10000; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 #start-button { font-size: 22px; color: var(--win10-text-on-dark); padding: 0 16px; cursor: pointer; transition: all 0.15s ease-out; display: flex; align-items: center; height: 100%; }
 #start-button:hover { background-color: rgba(255, 255, 255, 0.1); }
@@ -65,9 +71,9 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .taskbar-app-icon::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 3px; background-color: var(--win10-accent); transform: scaleX(0); transition: transform 0.2s ease; }
 .taskbar-app-icon.active::after { transform: scaleX(1); }
 #system-tray { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; color: var(--win10-text-on-dark); font-size: 12px; height: 100%; padding: 0 12px; cursor: pointer; }
-#system-tray:hover { background-color: rgba(255, 255, 255, 0.1); }
+#system-tray:hover, #system-tray.active { background-color: rgba(255, 255, 255, 0.1); }
 
-/* --- Start Menu (Enhanced Layout) --- */
+/* --- Start Menu --- */
 .start-menu { position: absolute; bottom: 52px; left: 4px; width: 520px; height: 600px; background: var(--win10-start-menu-bg); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; display: none; flex-direction: row; overflow: hidden; transform-origin: bottom left; animation: startMenuOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1); }
 @keyframes startMenuOpen { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .start-menu.visible { display: flex; }
@@ -126,25 +132,43 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .resize-handle.bl { bottom: 0; left: 0; width: 8px; height: 8px; cursor: nesw-resize; }
 .resize-handle.br { bottom: 0; right: 0; width: 8px; height: 8px; cursor: nwse-resize; }
 
-/* --- Window Body & File Explorer (Updated) --- */
+/* --- Window Body & Content Types --- */
 .window-body { flex-grow: 1; position: relative; background: var(--win10-window-bg); display: flex; padding: 0; overflow: hidden; }
-.window-body[data-alt-bg="true"] { background: var(--win10-window-bg-alt); }
-.sidebar { width: 180px; background: var(--win10-sidebar-bg); flex-shrink: 0; padding: 8px; border-right: 1px solid #ddd; overflow-y: auto; }
-.sidebar-item { display: flex; align-items: center; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-.sidebar-item:hover { background-color: #e0e0e0; }
-.sidebar-item.active { background-color: var(--win10-accent); color: white; }
-.sidebar-item i { width: 24px; text-align: center; margin-right: 8px; }
-.main-content { flex-grow: 1; padding: 8px; overflow: auto; }
-.file-explorer-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 16px; padding: 8px; }
-.file-item { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: var(--win10-border-radius); cursor: pointer; }
-.file-item:hover { background-color: #e0e0e0; }
-.file-item i { font-size: 28px; margin-bottom: 8px; color: var(--win10-accent); }
-.file-item span { font-size: 12px; text-align: center; word-break: break-word; }
 .text-content-body { padding: 8px; overflow: auto; width: 100%; }
 .iframe-container { width: 100%; height: 100%; position: relative; }
 .iframe-container iframe { width: 100%; height: 100%; border: none; visibility: hidden; }
 .iframe-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #888; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* --- File Explorer Specifics --- */
+.sidebar { width: 180px; background: var(--win10-sidebar-bg); flex-shrink: 0; padding: 8px; border-right: 1px solid #ddd; overflow-y: auto; }
+.sidebar-item { display: flex; align-items: center; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.sidebar-item:hover { background-color: #e0e0e0; }
+.sidebar-item.active { background-color: var(--win10-accent); color: white; }
+.sidebar-item i { width: 24px; text-align: center; margin-right: 8px; }
+.main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: auto; }
+/* NEW: Breadcrumbs for File Explorer */
+.fe-breadcrumbs { flex-shrink: 0; padding: 8px 12px; border-bottom: 1px solid #ddd; font-size: 13px; color: #555; white-space: nowrap; }
+.breadcrumb-item { cursor: pointer; }
+.breadcrumb-item:hover { color: var(--win10-accent); text-decoration: underline; }
+.breadcrumb-separator { margin: 0 6px; }
+.file-explorer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 16px; padding: 16px; }
+.file-item { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: var(--win10-border-radius); cursor: pointer; }
+.file-item:hover { background-color: #e0e0e0; }
+.file-item i { font-size: 28px; margin-bottom: 8px; color: var(--win10-accent); }
+.file-item span { font-size: 12px; text-align: center; word-break: break-word; }
+
+/* --- NEW: Settings App Specifics --- */
+.settings-body { display: flex; flex-direction: column; padding: 24px; overflow-y: auto; }
+.settings-section { margin-bottom: 32px; }
+.settings-section h3 { margin-top: 0; margin-bottom: 16px; font-weight: 500; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px; }
+.wallpaper-picker, .theme-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
+.wallpaper-thumb { width: 100%; height: 75px; border-radius: 4px; border: 2px solid transparent; cursor: pointer; background-size: cover; background-position: center; transition: border-color 0.2s; }
+.wallpaper-thumb:hover { border-color: #aaa; }
+.wallpaper-thumb.active { border-color: var(--win10-accent); }
+.theme-color-box { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid #ddd; transition: transform 0.2s, border-color 0.2s; }
+.theme-color-box:hover { transform: scale(1.1); }
+.theme-color-box.active { border-color: var(--win10-accent); transform: scale(1.1); }
 
 /* --- Context Menu --- */
 .context-menu { position: fixed; z-index: 10001; min-width: 180px; background: var(--win10-context-menu-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform-origin: top left; animation: contextMenuOpen 0.1s ease-out; }
@@ -154,26 +178,44 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .context-menu-item i { width: 24px; text-align: center; margin-right: 8px; font-size: 14px; }
 .context-menu-separator { height: 1px; background: rgba(0,0,0,0.1); margin: 6px 0; }
 
-/* --- Taskbar Peek Preview --- */
+/* --- Taskbar Peek & Flyout --- */
 #taskbar-peek-preview {
     position: fixed;
-    bottom: 52px; /* taskbar height + margin */
+    bottom: 52px;
     background: rgba(242, 242, 242, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(0,0,0,0.2);
     border-radius: var(--win10-border-radius);
     padding: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 10001;
-    display: flex;
-    align-items: center;
-    font-size: 14px;
+    display: flex; align-items: center; font-size: 14px;
     animation: peekFadeIn 0.15s ease-out;
     pointer-events: none;
 }
 #taskbar-peek-preview i { font-size: 20px; margin-right: 10px; color: #333; }
 @keyframes peekFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* NEW: System Tray Flyout Panel */
+#calendar-flyout {
+    position: fixed;
+    bottom: 52px; right: 4px;
+    width: 360px;
+    background: var(--win10-start-menu-bg);
+    color: var(--win10-text-on-dark);
+    border-radius: 6px;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%);
+    display: none; /* Controlled by JS */
+    animation: startMenuOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+    transform-origin: bottom right;
+}
+#calendar-flyout.visible { display: block; }
+.flyout-header { padding: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+#flyout-day { display: block; font-size: 24px; font-weight: 500; }
+#flyout-full-date { font-size: 14px; opacity: 0.8; }
+.flyout-calendar { padding: 16px; text-align: center; }
 
 /* --- Selection Marquee --- */
 #selection-marquee {
@@ -184,13 +226,13 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
     pointer-events: none;
 }
 
-/* --- NEW: Aero Snap Preview --- */
+/* --- Aero Snap Preview --- */
 #snap-preview {
     position: fixed;
     background-color: rgba(0, 0, 0, 0.2);
     border: 2px dashed rgba(255, 255, 255, 0.5);
     border-radius: var(--win10-border-radius);
-    z-index: 9998; /* Below active window, above desktop icons */
+    z-index: 9998;
     transition: opacity 0.2s ease-out, top 0.1s ease-out, left 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out;
     pointer-events: none;
     opacity: 0;
@@ -208,6 +250,7 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
     :root { --tile-size: 80px; }
     .window-component { min-width: 200px; min-height: 120px; }
     .sidebar { width: 120px; }
+    #calendar-flyout { width: 300px; bottom: 48px; }
 }
 @media (max-width: 480px) {
     .desktop-icons-grid { grid-template-columns: repeat(4, 1fr); width: 100%; left: 0; padding: 4px; gap: 0; }
@@ -215,5 +258,6 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
     .start-menu { width: 100%; height: calc(100% - 44px); left: 0; bottom: 44px; border-radius: 0; flex-direction: column; }
     .start-menu-sidebar { flex-direction: row; width: 100%; height: auto; align-items: center; }
     .start-menu-power { margin-top: 0; margin-left: auto; }
-    #system-tray { display: none; }
+    #system-tray { display: none; } /* Hide tray on very small screens */
+    #calendar-flyout { display: none !important; } /* Hide flyout as well */
 }

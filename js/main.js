@@ -1,12 +1,17 @@
 /*
  * ===================================================================
- *  WebDesk 10 - Main Application Logic (main.js) - V3.2 Final (Feature Update)
+ *  WebDesk 10 - Main Logic (main.js) - V4.0 (Major Feature Update)
  * ===================================================================
- *  - FEATURE: Added global Aero Snap preview management functions.
+ *  - FEATURE: Implemented drag-and-drop for desktop icons with position persistence
+ *    via localStorage.
+ *  - FEATURE: Added logic for the System Tray flyout panel (Calendar).
+ *  - FEATURE: Implemented global functions for changing wallpaper and theme color,
+ *    with persistence via localStorage.
+ *  - FEATURE: Added Aero Snap preview management.
  */
 
 // --- 1. Module Imports ---
-import { UI_TEXT, apps, DESKTOP_ICONS, PINNED_APPS } from './config.js';
+import { UI_TEXT, apps, DESKTOP_ICONS, PINNED_APPS, THEME_OPTIONS } from './config.js';
 import Window from './Window.js';
 
 // --- 2. Global State & DOM References ---
@@ -16,18 +21,19 @@ const windows = {}; // Stores all active window instances { id: Window }
 let contextMenu = null;
 const ANIMATION_DURATION = 200;
 
-// State variable for the Start Menu remains the single source of truth
+// State for menus and popups
 let isStartMenuOpen = false;
+let isCalendarFlyoutOpen = false;
 
-// State for marquee selection, taskbar peek, and snap preview
+// State for desktop interactions
 let selectionMarquee = null;
 let marqueeStartPos = { x: 0, y: 0 };
 let isDraggingMarquee = false;
 let taskbarPreview = null;
 let taskbarPreviewTimeout = null;
-let snapPreviewElement = null; // NEW: For snap preview
+let snapPreviewElement = null;
 
-
+// DOM References
 const loginScreen = document.getElementById('login-screen');
 const loginButton = document.getElementById('login-button');
 const desktopWrapper = document.getElementById('desktop-wrapper');
@@ -36,25 +42,29 @@ const taskbar = document.getElementById('taskbar');
 const startButton = document.getElementById('start-button');
 const startMenu = document.getElementById('start-menu');
 const startMenuPinnedContainer = document.getElementById('start-menu-pinned');
+const systemTray = document.getElementById('system-tray');
+const calendarFlyout = document.getElementById('calendar-flyout');
 const currentTimeDisplay = document.getElementById('current-time');
 const currentDateDisplay = document.getElementById('current-date');
 
-// --- 3. Global Window Management Functions ---
-// These are attached to the window object for accessibility from Window.js
+// --- 3. Global Functions ---
+// Window Management
 window.addWindow = (winInstance) => { windows[winInstance.id] = winInstance; };
 window.getWindowCount = () => Object.keys(windows).length;
 window.isActiveWindow = (winInstance) => activeWindow === winInstance;
 window.getWindows = () => windows;
 
-// Make key UI functions globally available
+// UI Components
 window.createContextMenu = createContextMenu;
 window.showTaskbarPreview = (icon, win) => showTaskbarPreview(icon, win);
 window.hideTaskbarPreview = () => hideTaskbarPreview();
-
-// NEW: Global snap preview functions
 window.showSnapPreview = (position) => showSnapPreview(position);
 window.hideSnapPreview = () => hideSnapPreview();
 
+// App and Theme Management
+window.openApp = openApp;
+window.setWallpaper = setWallpaper;
+window.setThemeColor = setThemeColor;
 
 window.setActiveWindow = (winInstance) => {
     if (activeWindow === winInstance) return;
@@ -113,28 +123,47 @@ function openApp(appId) {
         new Window(appId);
     }
 }
-window.openApp = openApp;
-
 
 // --- 4. UI Logic & Initialization ---
 
-/**
- * Opens the start menu if it's not already open.
- */
+function closeAllPopups() {
+    closeStartMenu();
+    closeCalendarFlyout();
+    removeContextMenu();
+}
+
 function openStartMenu() {
     if (isStartMenuOpen) return;
+    closeCalendarFlyout();
     isStartMenuOpen = true;
     startMenu.classList.add('visible');
 }
 
-/**
- * Closes the start menu if it's not already closed.
- */
 function closeStartMenu() {
     if (!isStartMenuOpen) return;
     isStartMenuOpen = false;
     startMenu.classList.remove('visible');
 }
+
+function toggleCalendarFlyout() {
+    if (isCalendarFlyoutOpen) {
+        closeCalendarFlyout();
+    } else {
+        closeStartMenu();
+        isCalendarFlyoutOpen = true;
+        updateCalendarFlyoutDate();
+        calendarFlyout.classList.add('visible');
+        systemTray.classList.add('active');
+    }
+}
+
+function closeCalendarFlyout() {
+    if (!isCalendarFlyoutOpen) return;
+    isCalendarFlyoutOpen = false;
+    calendarFlyout.classList.remove('visible');
+    systemTray.classList.remove('active');
+}
+
 
 function findAndFocusNextWindow() {
     let nextWindowToFocus = null;
@@ -186,19 +215,6 @@ function removeContextMenu() {
     }
 }
 
-function sortDesktopIcons(by = 'name') {
-    const icons = Array.from(desktopIconsGrid.children);
-    icons.sort((a, b) => {
-        const appA = apps[a.dataset.appId];
-        const appB = apps[b.dataset.appId];
-        if (by === 'type') {
-            return appA.type.localeCompare(appB.type) || appA.name.localeCompare(appB.name);
-        }
-        return appA.name.localeCompare(appB.name);
-    });
-    icons.forEach(icon => desktopIconsGrid.appendChild(icon));
-}
-
 function updateDateTime() {
     const now = new Date();
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
@@ -207,26 +223,31 @@ function updateDateTime() {
     currentDateDisplay.textContent = now.toLocaleDateString('zh-CN', dateOptions).replace(/\//g, '-');
 }
 
-// --- Taskbar Peek Preview Logic ---
+function updateCalendarFlyoutDate() {
+    const now = new Date();
+    const dayOptions = { weekday: 'long' };
+    const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('flyout-day').textContent = now.toLocaleDateString('zh-CN', dayOptions);
+    document.getElementById('flyout-full-date').textContent = now.toLocaleDateString('zh-CN', dateOptions);
+}
+
+
+// --- Taskbar Peek & Snap Preview Logic ---
 function showTaskbarPreview(taskbarIcon, winInstance) {
     clearTimeout(taskbarPreviewTimeout);
-    hideTaskbarPreview(); // Ensure no duplicates
-
+    hideTaskbarPreview();
     taskbarPreviewTimeout = setTimeout(() => {
         taskbarPreview = document.createElement('div');
         taskbarPreview.id = 'taskbar-peek-preview';
         taskbarPreview.innerHTML = `<i class="${winInstance.appData.icon}"></i><span>${winInstance.appData.name}</span>`;
         document.body.appendChild(taskbarPreview);
-
         const iconRect = taskbarIcon.getBoundingClientRect();
         const previewRect = taskbarPreview.getBoundingClientRect();
         let left = iconRect.left + (iconRect.width / 2) - (previewRect.width / 2);
-
         if (left < 5) left = 5;
         if (left + previewRect.width > window.innerWidth) left = window.innerWidth - previewRect.width - 5;
-
         taskbarPreview.style.left = `${left}px`;
-    }, 500); // Wait 500ms before showing
+    }, 500);
 }
 
 function hideTaskbarPreview() {
@@ -237,59 +258,39 @@ function hideTaskbarPreview() {
     }
 }
 
-// --- NEW: Aero Snap Preview Logic ---
 function showSnapPreview(position) {
     if (!snapPreviewElement) {
         snapPreviewElement = document.createElement('div');
         snapPreviewElement.id = 'snap-preview';
         document.body.appendChild(snapPreviewElement);
     }
-
     const taskbarHeight = taskbar.offsetHeight;
-    const styles = {
-        top: '0px',
-        height: `calc(100% - ${taskbarHeight}px)`
-    };
-
+    const styles = { top: '0px', height: `calc(100% - ${taskbarHeight}px)` };
     switch (position) {
-        case 'left':
-            styles.left = '0px';
-            styles.width = '50%';
-            break;
-        case 'right':
-            styles.left = '50%';
-            styles.width = '50%';
-            break;
-        case 'top':
-            styles.left = '0px';
-            styles.width = '100%';
-            break;
+        case 'left': styles.left = '0px'; styles.width = '50%'; break;
+        case 'right': styles.left = '50%'; styles.width = '50%'; break;
+        case 'top': styles.left = '0px'; styles.width = '100%'; break;
     }
-
     Object.assign(snapPreviewElement.style, styles);
     snapPreviewElement.style.opacity = '1';
 }
 
 function hideSnapPreview() {
-    if (snapPreviewElement) {
-        snapPreviewElement.style.opacity = '0';
-    }
+    if (snapPreviewElement) snapPreviewElement.style.opacity = '0';
 }
 
 
-// --- Desktop Marquee Selection Logic ---
+// --- Desktop Interaction Logic (Marquee, Drag-Drop) ---
 function startMarquee(e) {
     if (e.target !== desktopWrapper || e.button !== 0) return;
     document.querySelectorAll('.desktop-icon.selected').forEach(icon => icon.classList.remove('selected'));
     isDraggingMarquee = true;
     marqueeStartPos = { x: e.clientX, y: e.clientY };
-
     selectionMarquee = document.createElement('div');
     selectionMarquee.id = 'selection-marquee';
     selectionMarquee.style.left = `${e.clientX}px`;
     selectionMarquee.style.top = `${e.clientY}px`;
     document.body.appendChild(selectionMarquee);
-
     document.addEventListener('mousemove', dragMarquee);
     document.addEventListener('mouseup', endMarquee);
 }
@@ -297,19 +298,15 @@ function startMarquee(e) {
 function dragMarquee(e) {
     if (!isDraggingMarquee) return;
     e.preventDefault();
-    const currentX = e.clientX;
-    const currentY = e.clientY;
-
+    const currentX = e.clientX, currentY = e.clientY;
     const left = Math.min(currentX, marqueeStartPos.x);
     const top = Math.min(currentY, marqueeStartPos.y);
     const width = Math.abs(currentX - marqueeStartPos.x);
     const height = Math.abs(currentY - marqueeStartPos.y);
-
     selectionMarquee.style.left = `${left}px`;
     selectionMarquee.style.top = `${top}px`;
     selectionMarquee.style.width = `${width}px`;
     selectionMarquee.style.height = `${height}px`;
-
     checkMarqueeSelection();
 }
 
@@ -328,14 +325,75 @@ function checkMarqueeSelection() {
     const marqueeRect = selectionMarquee.getBoundingClientRect();
     document.querySelectorAll('.desktop-icon').forEach(icon => {
         const iconRect = icon.getBoundingClientRect();
-        const intersects = !(
-            marqueeRect.right < iconRect.left ||
-            marqueeRect.left > iconRect.right ||
-            marqueeRect.bottom < iconRect.top ||
-            marqueeRect.top > iconRect.bottom
-        );
+        const intersects = !(marqueeRect.right < iconRect.left || marqueeRect.left > iconRect.right || marqueeRect.bottom < iconRect.top || marqueeRect.top > iconRect.bottom);
         icon.classList.toggle('selected', intersects);
     });
+}
+
+function initIconDragDrop(iconEl) {
+    iconEl.setAttribute('draggable', 'true');
+    let draggedItem = null;
+
+    iconEl.addEventListener('dragstart', (e) => {
+        draggedItem = e.target;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', e.target.dataset.appId);
+        setTimeout(() => e.target.classList.add('is-dragging'), 0);
+    });
+
+    iconEl.addEventListener('dragend', (e) => {
+        e.target.classList.remove('is-dragging');
+        saveIconOrder();
+    });
+
+    iconEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const targetItem = e.target.closest('.desktop-icon');
+        if (targetItem && targetItem !== draggedItem) {
+            targetItem.classList.add('drag-over');
+        }
+    });
+
+    iconEl.addEventListener('dragleave', (e) => {
+        e.target.closest('.desktop-icon')?.classList.remove('drag-over');
+    });
+
+    iconEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetItem = e.target.closest('.desktop-icon');
+        targetItem?.classList.remove('drag-over');
+        if (targetItem && targetItem !== draggedItem) {
+            const parent = targetItem.parentNode;
+            parent.insertBefore(draggedItem, targetItem);
+        }
+    });
+}
+
+function saveIconOrder() {
+    const iconOrder = Array.from(desktopIconsGrid.children).map(icon => icon.dataset.appId);
+    localStorage.setItem('webdesk-icon-order', JSON.stringify(iconOrder));
+}
+
+
+// --- System Setup & Initialization ---
+
+function setWallpaper(url) {
+    desktopWrapper.style.backgroundImage = `url('${url}')`;
+    loginScreen.style.backgroundImage = `url('${url}')`;
+    localStorage.setItem('webdesk-wallpaper', url);
+}
+
+function setThemeColor(color) {
+    document.documentElement.style.setProperty('--win10-accent', color);
+    localStorage.setItem('webdesk-theme-color', color);
+}
+
+function loadSettings() {
+    const savedWallpaper = localStorage.getItem('webdesk-wallpaper') || THEME_OPTIONS.wallpapers[0].url;
+    const savedThemeColor = localStorage.getItem('webdesk-theme-color') || THEME_OPTIONS.colors[0];
+    setWallpaper(savedWallpaper);
+    setThemeColor(savedThemeColor);
 }
 
 function setupEventListeners() {
@@ -346,13 +404,22 @@ function setupEventListeners() {
         setTimeout(() => loginScreen.style.display = 'none', 500);
     });
 
-    startButton.addEventListener('click', () => {
+    startButton.addEventListener('click', (e) => {
+        e.stopPropagation();
         isStartMenuOpen ? closeStartMenu() : openStartMenu();
+    });
+
+    systemTray.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCalendarFlyout();
     });
 
     document.addEventListener('mousedown', (e) => {
         if (isStartMenuOpen && !startMenu.contains(e.target) && !startButton.contains(e.target)) {
             closeStartMenu();
+        }
+        if (isCalendarFlyoutOpen && !calendarFlyout.contains(e.target) && !systemTray.contains(e.target)) {
+            closeCalendarFlyout();
         }
         if (contextMenu && !contextMenu.contains(e.target)) {
             removeContextMenu();
@@ -360,11 +427,9 @@ function setupEventListeners() {
     });
 
     desktopWrapper.addEventListener('mousedown', startMarquee);
-
     desktopWrapper.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        closeStartMenu();
-
+        closeAllPopups();
         const targetIcon = e.target.closest('.desktop-icon');
         let menuItems;
         if (targetIcon) {
@@ -387,9 +452,22 @@ function setupEventListeners() {
 }
 
 function initializeDesktop() {
-    desktopWrapper.style.backgroundImage = "url('img/img.png')";
+    loadSettings();
 
-    DESKTOP_ICONS.forEach(appId => {
+    // Determine icon order (from storage or default)
+    let iconOrder;
+    try {
+        iconOrder = JSON.parse(localStorage.getItem('webdesk-icon-order'));
+        if (!Array.isArray(iconOrder) || iconOrder.length !== DESKTOP_ICONS.length) {
+            throw new Error("Invalid icon order in storage.");
+        }
+    } catch (e) {
+        iconOrder = [...DESKTOP_ICONS];
+        localStorage.setItem('webdesk-icon-order', JSON.stringify(iconOrder));
+    }
+
+    desktopIconsGrid.innerHTML = '';
+    iconOrder.forEach(appId => {
         const app = apps[appId];
         if (!app) return;
         const iconEl = document.createElement('div');
@@ -405,6 +483,7 @@ function initializeDesktop() {
             iconEl.classList.add('selected');
         });
         iconEl.addEventListener('dblclick', () => openApp(appId));
+        initIconDragDrop(iconEl);
         desktopIconsGrid.appendChild(iconEl);
     });
 
@@ -427,7 +506,20 @@ function initializeDesktop() {
     updateDateTime();
     setInterval(updateDateTime, 1000 * 60);
     setupEventListeners();
-    sortDesktopIcons('name');
+}
+
+function sortDesktopIcons(by = 'name') {
+    const icons = Array.from(desktopIconsGrid.children);
+    icons.sort((a, b) => {
+        const appA = apps[a.dataset.appId];
+        const appB = apps[b.dataset.appId];
+        if (by === 'type') {
+            return appA.type.localeCompare(appB.type) || appA.name.localeCompare(appB.name);
+        }
+        return appA.name.localeCompare(appB.name);
+    });
+    icons.forEach(icon => desktopIconsGrid.appendChild(icon));
+    saveIconOrder(); // Save the new sorted order
 }
 
 // --- 5. Application Start ---
