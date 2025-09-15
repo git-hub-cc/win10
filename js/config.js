@@ -1,10 +1,13 @@
 /*
  * ===================================================================
- *  WebDesk 10 - Configuration File (config.js) - V4.0
+ *  WebDesk 10 - Configuration File (config.js) - V6.0
  * ===================================================================
- *  - FEATURE: Added 'settings' app definition.
- *  - FEATURE: Added theme options (wallpapers, colors) for settings app.
- *  - FEATURE: Enhanced File Explorer content structure to support nested folders.
+ *  - FEATURE: Added `SEARCHABLE_ITEMS` data structure to power the new
+ *    taskbar search functionality. Includes apps and web search providers.
+ *  - REFACTOR: Overhauled File Explorer data structure to be a hierarchical
+ *    tree with unique IDs and rich metadata for each item. This supports
+ *    nested folders, breadcrumbs, tree view navigation, and detailed views.
+ *  - FEATURE: Added metadata (dateModified, typeString, size) to FE items.
  */
 
 // --- 1. UI Text Constants ---
@@ -26,10 +29,11 @@ export const UI_TEXT = {
     webDevTool: "网站开发工具",
 
     // File Explorer
-    favorites: "常用网站",
-    workRelated: "工作相关",
-    projectFiles: "项目文件",
-    myCollection: "我的收藏",
+    quickAccess: "快速访问",
+    thisPC: "此电脑",
+    desktop: "桌面",
+    documents: "文档",
+    downloads: "下载",
 
     // Settings App
     personalization: "个性化",
@@ -43,8 +47,13 @@ export const UI_TEXT = {
     properties: "属性",
     sortBy: "排序方式",
     sortByName: "名称",
+    sortByDate: "修改日期",
     sortByType: "类型",
+    sortBySize: "大小",
     refresh: "刷新",
+    view: "查看",
+    viewIcons: "大图标",
+    viewDetails: "详细信息",
 };
 
 // --- 2. Theme & Customization Options ---
@@ -64,7 +73,6 @@ export const THEME_OPTIONS = {
         '#795548', // Brown
     ]
 };
-
 
 // --- 3. Application Definitions ---
 export const apps = {
@@ -94,41 +102,44 @@ export const apps = {
         type: "file-explorer",
         size: "large",
         content: {
-            "favorites": {
-                sidebarName: UI_TEXT.favorites,
-                icon: "fas fa-star",
-                items: [
-                    { name: UI_TEXT.personalHomepage, icon: "fas fa-globe", type: "app-link", appId: "personal-homepage" },
-                    { name: "GitHub", icon: "fab fa-github", type: "app-link", appId: "github-profile" }
-                ]
-            },
-            "my-collection": {
-                sidebarName: UI_TEXT.myCollection,
-                icon: "fas fa-folder-open",
-                items: [
-                    // NEW: Subfolder example
-                    {
-                        id: "ppmc-sites",
-                        name: "PPMC Club 站点",
-                        icon: "fas fa-folder",
-                        type: "folder",
-                        items: [
-                            { name: UI_TEXT.musicPlayer, icon: "fas fa-music", type: "app-link", appId: "music-player" },
-                            { name: UI_TEXT.mainBlog, icon: "fas fa-blog", type: "app-link", appId: "main-blog" },
-                            { name: UI_TEXT.toolHub, icon: "fas fa-tools", type: "app-link", appId: "tool-hub" },
-                            { name: UI_TEXT.navHub, icon: "fas fa-compass", type: "app-link", appId: "nav-hub" }
-                        ]
-                    },
-                    { name: UI_TEXT.webDevTool, icon: "fas fa-laptop-code", type: "app-link", appId: "web-dev-tool" },
-                ]
-            },
-            "work": {
-                sidebarName: UI_TEXT.workRelated,
-                icon: "fas fa-briefcase",
-                items: [
-                    { name: "LinkedIn", icon: "fab fa-linkedin", type: "app-link", appId: "linkedin-profile" }
-                ]
-            }
+            id: 'root',
+            children: [
+                {
+                    id: 'quick-access', name: UI_TEXT.quickAccess, type: 'group', icon: 'fas fa-star', isExpanded: true,
+                    children: [
+                        { id: 'desktop', name: UI_TEXT.desktop, type: 'folder', icon: 'fas fa-desktop', dateModified: '2023-10-26T08:00:00Z', children: [] },
+                        { id: 'downloads', name: UI_TEXT.downloads, type: 'folder', icon: 'fas fa-download', dateModified: '2023-10-27T11:20:00Z', children: [] },
+                        { id: 'documents', name: UI_TEXT.documents, type: 'folder', icon: 'fas fa-file-alt', dateModified: '2023-10-27T14:35:00Z', children: [] },
+                    ]
+                },
+                {
+                    id: 'this-pc', name: UI_TEXT.thisPC, type: 'group', icon: 'fas fa-hdd', isExpanded: true,
+                    children: [
+                        {
+                            id: 'ppmc-sites', name: "PPMC Club 站点", type: 'folder', icon: 'fas fa-folder-open', dateModified: '2023-09-15T10:00:00Z',
+                            children: [
+                                { id: 'music-player-link', name: UI_TEXT.musicPlayer, type: 'app-link', appId: 'music-player', icon: 'fas fa-music', dateModified: '2023-09-15T10:01:00Z', typeString: '快捷方式', size: 1024 },
+                                { id: 'main-blog-link', name: UI_TEXT.mainBlog, type: 'app-link', appId: 'main-blog', icon: 'fas fa-blog', dateModified: '2023-09-15T10:02:00Z', typeString: '快捷方式', size: 1024 },
+                                { id: 'tool-hub-link', name: UI_TEXT.toolHub, type: 'app-link', appId: 'tool-hub', icon: 'fas fa-tools', dateModified: '2023-09-15T10:03:00Z', typeString: '快捷方式', size: 1024 },
+                                { id: 'nav-hub-link', name: UI_TEXT.navHub, type: 'app-link', appId: 'nav-hub', icon: 'fas fa-compass', dateModified: '2023-09-16T18:30:00Z', typeString: '快捷方式', size: 1024 }
+                            ]
+                        },
+                        {
+                            id: 'work-related', name: "工作相关", type: 'folder', icon: 'fas fa-briefcase', dateModified: '2023-10-01T09:00:00Z',
+                            children: [
+                                { id: 'linkedin-link', name: "LinkedIn", type: 'app-link', appId: 'linkedin-profile', icon: 'fab fa-linkedin', dateModified: '2023-10-01T09:01:00Z', typeString: '快捷方式', size: 1024 }
+                            ]
+                        },
+                        {
+                            id: 'project-files', name: "项目文件", type: 'folder', icon: 'fas fa-code-branch', dateModified: '2023-08-20T20:45:00Z',
+                            children: [
+                                { id: 'github-link', name: "GitHub", type: 'app-link', appId: 'github-profile', icon: 'fab fa-github', dateModified: '2023-08-20T20:46:00Z', typeString: '快捷方式', size: 1024 }
+                            ]
+                        },
+                        { id: 'web-dev-tool-link', name: UI_TEXT.webDevTool, type: 'app-link', appId: 'web-dev-tool', icon: 'fas fa-laptop-code', dateModified: '2023-09-25T16:00:00Z', typeString: '快捷方式', size: 1024 },
+                    ]
+                }
+            ]
         }
     },
     "online-chat": {
@@ -162,7 +173,7 @@ export const DESKTOP_ICONS = [
     "website-directory",
     "online-chat",
     "recycle-bin",
-    "settings", // <-- NEW
+    "settings",
     "music-player",
     "main-blog",
     "tool-hub",
@@ -173,9 +184,23 @@ export const PINNED_APPS = [
     "website-directory", // large
     "online-chat",       // wide
     "main-blog",         // wide
-    "settings",          // medium <-- NEW
+    "settings",          // medium
     "about-me",          // medium
     "my-projects",       // medium
     "tool-hub",          // medium
     "music-player"       // medium
+];
+
+// --- 5. NEW: Search Configuration ---
+export const SEARCHABLE_ITEMS = [
+    // Apps
+    { name: UI_TEXT.settings, type: 'app', icon: 'fas fa-cog', keywords: ['settings', 'shezhi', '设置', '个性化', 'personalization', '控制面板'], action: { type: 'openApp', appId: 'settings' } },
+    { name: UI_TEXT.websiteDirectory, type: 'app', icon: 'fas fa-sitemap', keywords: ['explorer', 'files', 'wenjian', '文件', '目录'], action: { type: 'openApp', appId: 'website-directory' } },
+    { name: UI_TEXT.onlineChat, type: 'app', icon: 'fas fa-comments', keywords: ['chat', 'liaotian', '聊天'], action: { type: 'openApp', appId: 'online-chat' } },
+    { name: UI_TEXT.musicPlayer, type: 'app', icon: 'fas fa-music', keywords: ['music', 'yinyue', '音乐', 'player'], action: { type: 'openApp', appId: 'music-player' } },
+    { name: UI_TEXT.mainBlog, type: 'app', icon: 'fas fa-blog', keywords: ['blog', 'boke', '博客'], action: { type: 'openApp', appId: 'main-blog' } },
+
+    // Web Search Providers
+    { name: 'Bing 搜索', type: 'web-search', icon: 'fab fa-bing', keywords: ['bing', 'biying', '必应', '搜索', 'web', 'search'], action: { type: 'openWeb', url: 'https://www.bing.com/search?q=' } },
+    { name: 'Google 搜索', type: 'web-search', icon: 'fab fa-google', keywords: ['google', 'guge', '谷歌', 'search'], action: { type: 'openWeb', url: 'https://www.google.com/search?q=' } }
 ];

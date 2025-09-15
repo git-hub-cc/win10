@@ -1,11 +1,13 @@
 /*
  * ===================================================================
- *  WebDesk 10 - Stylesheet (style.css) - V4.0 (Major Feature Update)
+ *  WebDesk 10 - Stylesheet (style.css) - V6.0 (Calendar & Search)
  * ===================================================================
- *  - FEATURE: Added styles for draggable desktop icons.
- *  - FEATURE: Added styles for the System Tray flyout panel.
- *  - FEATURE: Added styles for the new Settings App window.
- *  - FEATURE: Added styles for File Explorer breadcrumbs.
+ *  - FEATURE: Added styles for a functional taskbar search box and its
+ *    suggestions flyout panel, mimicking Windows 10's look and feel.
+ *  - FEATURE: Complete overhaul of the Calendar flyout with styles for
+ *    a dynamic grid, navigation controls, and day states (today, other month).
+ *  - TWEAK: Adjusted taskbar layout to accommodate the new search box.
+ *  - REFACTOR: Minor adjustments to flyout panel z-indexing for consistency.
  */
 
 /* --- Global Resets & Base Styles --- */
@@ -18,10 +20,12 @@
     --win10-window-bg-alt: #F3F3F3;
     --win10-sidebar-bg: #F0F0F0;
     --win10-text-primary: #000000;
+    --win10-text-secondary: #555555;
     --win10-text-on-dark: #FFFFFF;
     --win10-icon-color: #000000;
     --win10-active-window-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
     --win10-inactive-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    --win10-border-color: #DDDDDD;
     --win10-border-radius: 4px;
     --segoe-ui: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', sans-serif;
     --tile-size: 90px;
@@ -56,21 +60,29 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .desktop-icon.selected { background-color: rgba(0, 120, 212, 0.4); border: 1px solid var(--win10-accent); }
 .desktop-icon .icon { font-size: 32px; margin-bottom: 8px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none; }
 .desktop-icon .label { font-size: 12px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); line-height: 1.3; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; pointer-events: none;}
-/* NEW: Styles for drag-and-drop */
 .desktop-icon.is-dragging { opacity: 0.5; border: 1px dashed white; }
 .desktop-icon.drag-over { background-color: rgba(255, 255, 255, 0.3); }
 
 .taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 48px; background: var(--win10-taskbar-bg); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); display: flex; align-items: center; padding: 0 8px; z-index: 10000; border-top: 1px solid rgba(255, 255, 255, 0.1); }
-#start-button { font-size: 22px; color: var(--win10-text-on-dark); padding: 0 16px; cursor: pointer; transition: all 0.15s ease-out; display: flex; align-items: center; height: 100%; }
+#start-button { font-size: 22px; color: var(--win10-text-on-dark); padding: 0 16px; cursor: pointer; transition: all 0.15s ease-out; display: flex; align-items: center; height: 100%; flex-shrink: 0; }
 #start-button:hover { background-color: rgba(255, 255, 255, 0.1); }
-#running-apps { flex-grow: 1; display: flex; align-items: center; height: 100%; overflow-x: auto; scrollbar-width: none; }
+
+/* ▼▼▼ NEW: Taskbar Search Box ▼▼▼ */
+#taskbar-search { position: relative; display: flex; align-items: center; width: 220px; height: 34px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 2px; margin: 0 8px; flex-shrink: 0; transition: background-color 0.2s; }
+#taskbar-search:focus-within { background-color: white; border-color: var(--win10-accent); }
+#search-icon { position: absolute; left: 10px; color: #555; font-size: 14px; pointer-events: none; }
+#search-input { width: 100%; height: 100%; background: transparent; border: none; outline: none; padding: 0 12px 0 34px; font-family: var(--segoe-ui); font-size: 14px; color: var(--win10-text-primary); }
+#search-input::placeholder { color: #666; }
+/* ▲▲▲ NEW: Taskbar Search Box ▲▲▲ */
+
+#running-apps { flex-grow: 1; display: flex; align-items: center; height: 100%; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 #running-apps::-webkit-scrollbar { display: none; }
-.taskbar-app-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 100%; font-size: 20px; color: var(--win10-text-on-dark); cursor: pointer; transition: all 0.15s ease-out; margin: 0 2px; }
+.taskbar-app-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 100%; font-size: 20px; color: var(--win10-text-on-dark); cursor: pointer; transition: all 0.15s ease-out; margin: 0 2px; flex-shrink: 0; }
 .taskbar-app-icon:hover { background-color: rgba(255, 255, 255, 0.1); }
 .taskbar-app-icon.active { background-color: rgba(255, 255, 255, 0.2); }
 .taskbar-app-icon::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 3px; background-color: var(--win10-accent); transform: scaleX(0); transition: transform 0.2s ease; }
 .taskbar-app-icon.active::after { transform: scaleX(1); }
-#system-tray { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; color: var(--win10-text-on-dark); font-size: 12px; height: 100%; padding: 0 12px; cursor: pointer; }
+#system-tray { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; color: var(--win10-text-on-dark); font-size: 12px; height: 100%; padding: 0 12px; cursor: pointer; flex-shrink: 0; }
 #system-tray:hover, #system-tray.active { background-color: rgba(255, 255, 255, 0.1); }
 
 /* --- Start Menu --- */
@@ -140,25 +152,78 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .iframe-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #888; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 
-/* --- File Explorer Specifics --- */
-.sidebar { width: 180px; background: var(--win10-sidebar-bg); flex-shrink: 0; padding: 8px; border-right: 1px solid #ddd; overflow-y: auto; }
-.sidebar-item { display: flex; align-items: center; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-.sidebar-item:hover { background-color: #e0e0e0; }
-.sidebar-item.active { background-color: var(--win10-accent); color: white; }
-.sidebar-item i { width: 24px; text-align: center; margin-right: 8px; }
-.main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: auto; }
-/* NEW: Breadcrumbs for File Explorer */
-.fe-breadcrumbs { flex-shrink: 0; padding: 8px 12px; border-bottom: 1px solid #ddd; font-size: 13px; color: #555; white-space: nowrap; }
-.breadcrumb-item { cursor: pointer; }
-.breadcrumb-item:hover { color: var(--win10-accent); text-decoration: underline; }
-.breadcrumb-separator { margin: 0 6px; }
-.file-explorer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 16px; padding: 16px; }
-.file-item { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: var(--win10-border-radius); cursor: pointer; }
-.file-item:hover { background-color: #e0e0e0; }
-.file-item i { font-size: 28px; margin-bottom: 8px; color: var(--win10-accent); }
-.file-item span { font-size: 12px; text-align: center; word-break: break-word; }
+/*
+ * ===================================================================
+ *  File Explorer Overhaul
+ * ===================================================================
+ */
 
-/* --- NEW: Settings App Specifics --- */
+.fe-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; background-color: var(--win10-window-bg); }
+.fe-body { flex-grow: 1; display: flex; overflow: hidden; }
+.fe-nav-pane { width: 220px; flex-shrink: 0; background-color: var(--win10-sidebar-bg); border-right: 1px solid var(--win10-border-color); padding: 8px; overflow-y: auto; font-size: 13px; }
+.fe-main-area { flex-grow: 1; display: flex; flex-direction: column; }
+.fe-content-area { flex-grow: 1; position: relative; overflow: auto; }
+
+/* --- FE: Toolbar --- */
+.fe-toolbar { flex-shrink: 0; display: flex; align-items: center; padding: 4px 8px; border-bottom: 1px solid var(--win10-border-color); height: 40px; }
+.fe-nav-buttons button, .fe-view-buttons button { background: none; border: 1px solid transparent; border-radius: 4px; width: 32px; height: 32px; font-size: 14px; color: var(--win10-text-secondary); cursor: pointer; }
+.fe-nav-buttons button:hover:not(:disabled), .fe-view-buttons button:hover:not(:disabled) { background-color: #e0e0e0; }
+.fe-nav-buttons button:disabled { color: #ccc; cursor: not-allowed; }
+.fe-nav-buttons button:not(:first-child) { margin-left: 4px; }
+.fe-view-buttons { margin-left: auto; }
+.fe-view-buttons button.active { background-color: #cce4f7; color: var(--win10-accent); }
+
+/* --- FE: Address Bar --- */
+.fe-address-bar-container { flex-grow: 1; display: flex; align-items: center; border: 1px solid #ccc; border-radius: 2px; height: 32px; margin: 0 8px; background-color: white; }
+.fe-address-bar-container:focus-within { border-color: var(--win10-accent); }
+.fe-address-bar { display: flex; align-items: center; width: 100%; height: 100%; padding: 0 4px; font-size: 13px; min-width: 0; }
+.fe-breadcrumbs { display: flex; align-items: center; white-space: nowrap; overflow: hidden; flex-shrink: 1; min-width: 0; }
+.fe-breadcrumb-item { padding: 4px 6px; cursor: pointer; border-radius: 2px; display: flex; align-items: center; white-space: nowrap; }
+.fe-breadcrumb-item:hover { background-color: #e0e0e0; }
+.fe-breadcrumb-separator { color: #999; margin: 0 2px; }
+.fe-address-bar-input { width: 100%; height: 100%; border: none; outline: none; padding: 0 8px; font-family: var(--segoe-ui); font-size: 13px; display: none; }
+.fe-address-bar.edit-mode .fe-breadcrumbs { display: none; }
+.fe-address-bar.edit-mode .fe-address-bar-input { display: block; }
+
+/* --- FE: Nav Pane (Tree View) --- */
+.fe-nav-pane ul { list-style: none; padding-left: 18px; margin: 0; }
+.fe-nav-pane .tree-item { padding: 5px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; white-space: nowrap; }
+.fe-nav-pane .tree-item:hover { background-color: #e0e0e0; }
+.fe-nav-pane .tree-item.active { background-color: var(--win10-accent); color: white; }
+.fe-nav-pane .tree-toggle { width: 16px; height: 16px; text-align: center; font-size: 10px; transition: transform 0.1s ease-out; }
+.fe-nav-pane .tree-toggle.expanded { transform: rotate(90deg); }
+.fe-nav-pane .tree-icon { width: 24px; text-align: center; }
+
+/* --- FE: Main Content Area & Common Item Styles --- */
+.fe-item { user-select: none; }
+.fe-item.selected { background-color: rgba(0, 120, 212, 0.2); border-color: rgba(0, 120, 212, 0.4); }
+.window-component:not(.active) .fe-item.selected { background-color: #e0e0e0; border-color: #ccc; }
+.fe-marquee { position: absolute; border: 1px solid var(--win10-accent); background-color: rgba(0, 120, 212, 0.3); z-index: 100; pointer-events: none; }
+
+/* --- FE: Details View --- */
+.view-details { padding: 0; }
+.fe-details-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fe-details-table th { background-color: #f0f0f0; border-bottom: 1px solid var(--win10-border-color); text-align: left; padding: 8px; font-weight: normal; cursor: pointer; white-space: nowrap; }
+.fe-details-table th:hover { background-color: #e5e5e5; }
+.fe-details-table th .sort-indicator { margin-left: 8px; }
+.fe-details-table td { padding: 6px 8px; border-bottom: 1px solid #f5f5f5; }
+.fe-details-table tr:last-child td { border-bottom: none; }
+.fe-details-table tr.fe-item:hover { background-color: #f0f0f0; }
+.fe-details-table .item-icon { width: 28px; text-align: center; color: var(--win10-accent); }
+.fe-details-table .item-name { display: flex; align-items: center; }
+
+/* --- FE: Icons View --- */
+.view-icons { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 16px; }
+.view-icons .fe-item { display: flex; flex-direction: column; align-items: center; padding: 8px; border: 1px solid transparent; border-radius: var(--win10-border-radius); cursor: pointer; }
+.view-icons .fe-item:hover { background-color: #e0e0e0; }
+.view-icons .item-icon { font-size: 28px; margin-bottom: 8px; color: var(--win10-accent); }
+.view-icons .item-name { font-size: 12px; text-align: center; word-break: break-word; }
+
+/* --- FE: Status Bar --- */
+.fe-status-bar { flex-shrink: 0; display: flex; justify-content: space-between; padding: 4px 12px; border-top: 1px solid var(--win10-border-color); font-size: 12px; color: var(--win10-text-secondary); background-color: #f0f0f0; }
+
+
+/* --- Settings App Specifics --- */
 .settings-body { display: flex; flex-direction: column; padding: 24px; overflow-y: auto; }
 .settings-section { margin-bottom: 32px; }
 .settings-section h3 { margin-top: 0; margin-bottom: 16px; font-weight: 500; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px; }
@@ -174,7 +239,8 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 .context-menu { position: fixed; z-index: 10001; min-width: 180px; background: var(--win10-context-menu-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform-origin: top left; animation: contextMenuOpen 0.1s ease-out; }
 @keyframes contextMenuOpen { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .context-menu-item { display: flex; align-items: center; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: var(--win10-border-radius); }
-.context-menu-item:hover { background-color: var(--win10-accent); color: var(--win10-text-on-dark); }
+.context-menu-item:not(.disabled):hover { background-color: var(--win10-accent); color: var(--win10-text-on-dark); }
+.context-menu-item.disabled { color: #999; cursor: default; }
 .context-menu-item i { width: 24px; text-align: center; margin-right: 8px; font-size: 14px; }
 .context-menu-separator { height: 1px; background: rgba(0,0,0,0.1); margin: 6px 0; }
 
@@ -196,7 +262,7 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
 #taskbar-peek-preview i { font-size: 20px; margin-right: 10px; color: #333; }
 @keyframes peekFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* NEW: System Tray Flyout Panel */
+/* ▼▼▼ UPDATED & NEW: System Tray & Search Flyouts ▼▼▼ */
 #calendar-flyout {
     position: fixed;
     bottom: 52px; right: 4px;
@@ -210,12 +276,48 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
     display: none; /* Controlled by JS */
     animation: startMenuOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
     transform-origin: bottom right;
+    padding: 16px;
 }
 #calendar-flyout.visible { display: block; }
-.flyout-header { padding: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+.flyout-header { padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); margin-bottom: 12px; }
 #flyout-day { display: block; font-size: 24px; font-weight: 500; }
 #flyout-full-date { font-size: 14px; opacity: 0.8; }
-.flyout-calendar { padding: 16px; text-align: center; }
+.flyout-calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+#current-month-year { font-weight: 500; }
+.calendar-nav button { background: none; border: none; color: white; cursor: pointer; font-size: 16px; padding: 4px 10px; border-radius: 4px; }
+.calendar-nav button:hover { background-color: rgba(255, 255, 255, 0.1); }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+.calendar-weekdays { font-size: 12px; color: #aaa; padding-bottom: 8px; }
+.calendar-grid { gap: 2px; }
+.calendar-day { display: flex; align-items: center; justify-content: center; height: 36px; font-size: 14px; cursor: pointer; border-radius: 50%; border: 2px solid transparent; transition: all 0.1s ease-out; }
+.calendar-day:not(.other-month):hover { background-color: rgba(255, 255, 255, 0.1); }
+.calendar-day.other-month { color: #888; cursor: default; }
+.calendar-day.today { border-color: var(--win10-accent); }
+.calendar-day.selected { background-color: var(--win10-accent); border-color: var(--win10-accent); }
+
+#search-suggestions-flyout {
+    position: fixed;
+    bottom: 52px;
+    background: var(--win10-start-menu-bg);
+    color: var(--win10-text-on-dark);
+    border-radius: 6px;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%);
+    display: none; /* Controlled by JS */
+    animation: startMenuOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+    transform-origin: bottom left;
+    overflow: hidden;
+    padding: 8px;
+}
+#search-suggestions-flyout.visible { display: block; }
+.suggestion-item { display: flex; align-items: center; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+.suggestion-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+.suggestion-icon { width: 32px; text-align: center; margin-right: 12px; font-size: 16px; }
+.suggestion-text { font-size: 14px; }
+.suggestion-text .match { font-weight: bold; }
+/* ▲▲▲ UPDATED & NEW: System Tray & Search Flyouts ▲▲▲ */
+
 
 /* --- Selection Marquee --- */
 #selection-marquee {
@@ -249,12 +351,14 @@ body.is-interacting * { user-select: none !important; cursor: inherit !important
     .start-menu-sidebar { width: 160px; }
     :root { --tile-size: 80px; }
     .window-component { min-width: 200px; min-height: 120px; }
-    .sidebar { width: 120px; }
+    .fe-nav-pane { width: 160px; }
     #calendar-flyout { width: 300px; bottom: 48px; }
+    #taskbar-search { width: 150px; }
 }
 @media (max-width: 480px) {
     .desktop-icons-grid { grid-template-columns: repeat(4, 1fr); width: 100%; left: 0; padding: 4px; gap: 0; }
     #start-button { padding: 0 12px; }
+    #taskbar-search { display: none; } /* Hide search box on very small screens */
     .start-menu { width: 100%; height: calc(100% - 44px); left: 0; bottom: 44px; border-radius: 0; flex-direction: column; }
     .start-menu-sidebar { flex-direction: row; width: 100%; height: auto; align-items: center; }
     .start-menu-power { margin-top: 0; margin-left: auto; }
