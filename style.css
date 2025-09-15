@@ -1,0 +1,219 @@
+/*
+ * ===================================================================
+ *  WebDesk 10 - Stylesheet (style.css) - V3.2 Final (Feature Update)
+ * ===================================================================
+ *  - BUGFIX: Defined the missing '--win10-icon-color' CSS variable.
+ *  - FEATURE: Added styles for Aero Snap preview effect.
+ */
+
+/* --- Global Resets & Base Styles --- */
+:root {
+    --win10-accent: #0078D4;
+    --win10-taskbar-bg: rgba(26, 26, 26, 0.9);
+    --win10-start-menu-bg: rgba(40, 40, 40, 0.95);
+    --win10-context-menu-bg: rgba(242, 242, 242, 0.98);
+    --win10-window-bg: #FFFFFF;
+    --win10-window-bg-alt: #F3F3F3;
+    --win10-sidebar-bg: #F0F0F0;
+    --win10-text-primary: #000000;
+    --win10-text-on-dark: #FFFFFF;
+    --win10-icon-color: #000000;
+    --win10-active-window-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    --win10-inactive-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    --win10-border-radius: 4px;
+    --segoe-ui: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', sans-serif;
+    --tile-size: 90px;
+}
+
+body { margin: 0; padding: 0; overflow: hidden; font-family: var(--segoe-ui); background-color: #0078D4; cursor: default; box-sizing: border-box; user-select: none; }
+body.is-interacting * { user-select: none !important; cursor: inherit !important; }
+*, *:before, *:after { box-sizing: inherit; }
+
+/* --- Login Screen (New) --- */
+#login-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('img/img.png');
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99999;
+    transition: opacity 0.5s ease-out;
+}
+.login-box { text-align: center; color: white; padding: 40px; background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 10px; }
+.avatar { font-size: 80px; margin-bottom: 20px; }
+.username { margin: 0 0 20px; font-weight: 300; }
+#login-button { background: var(--win10-accent); color: white; border: none; padding: 10px 40px; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+#login-button:hover { background-color: #005a9e; }
+
+/* --- Desktop & Taskbar --- */
+.desktop-wrapper, .taskbar, .start-menu { opacity: 0; transition: opacity 0.5s ease-in; }
+.desktop-wrapper.visible, .taskbar.visible, .start-menu.visible { opacity: 1; }
+.desktop-wrapper { position: relative; width: 100vw; height: 100vh; background-size: cover; background-position: center; overflow: hidden; }
+.desktop-icons-grid { position: absolute; top: 10px; left: 10px; display: grid; grid-template-columns: repeat(auto-fill, 96px); grid-auto-rows: 96px; gap: 4px; padding: 10px; z-index: 10; }
+.desktop-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; padding: 8px; border-radius: var(--win10-border-radius); transition: background-color 0.1s; border: 1px solid transparent; }
+.desktop-icon:hover { background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); }
+.desktop-icon.selected { background-color: rgba(0, 120, 212, 0.4); border: 1px solid var(--win10-accent); }
+.desktop-icon .icon { font-size: 32px; margin-bottom: 8px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none; }
+.desktop-icon .label { font-size: 12px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); line-height: 1.3; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; pointer-events: none;}
+.taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 48px; background: var(--win10-taskbar-bg); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); display: flex; align-items: center; padding: 0 8px; z-index: 10000; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+#start-button { font-size: 22px; color: var(--win10-text-on-dark); padding: 0 16px; cursor: pointer; transition: all 0.15s ease-out; display: flex; align-items: center; height: 100%; }
+#start-button:hover { background-color: rgba(255, 255, 255, 0.1); }
+#running-apps { flex-grow: 1; display: flex; align-items: center; height: 100%; overflow-x: auto; scrollbar-width: none; }
+#running-apps::-webkit-scrollbar { display: none; }
+.taskbar-app-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 100%; font-size: 20px; color: var(--win10-text-on-dark); cursor: pointer; transition: all 0.15s ease-out; margin: 0 2px; }
+.taskbar-app-icon:hover { background-color: rgba(255, 255, 255, 0.1); }
+.taskbar-app-icon.active { background-color: rgba(255, 255, 255, 0.2); }
+.taskbar-app-icon::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 3px; background-color: var(--win10-accent); transform: scaleX(0); transition: transform 0.2s ease; }
+.taskbar-app-icon.active::after { transform: scaleX(1); }
+#system-tray { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; color: var(--win10-text-on-dark); font-size: 12px; height: 100%; padding: 0 12px; cursor: pointer; }
+#system-tray:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+/* --- Start Menu (Enhanced Layout) --- */
+.start-menu { position: absolute; bottom: 52px; left: 4px; width: 520px; height: 600px; background: var(--win10-start-menu-bg); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; display: none; flex-direction: row; overflow: hidden; transform-origin: bottom left; animation: startMenuOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1); }
+@keyframes startMenuOpen { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.start-menu.visible { display: flex; }
+.start-menu-sidebar { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; }
+.start-menu-header { padding: 16px; display: flex; align-items: center; cursor: pointer; color: var(--win10-text-on-dark); }
+.start-menu-header:hover { background-color: rgba(255, 255, 255, 0.1); }
+.start-menu-header .profile-icon { font-size: 28px; margin-right: 12px; }
+.start-menu-header .user-name { font-size: 14px; font-weight: 500; }
+.start-menu-power { padding: 12px 16px; margin-top: auto; cursor: pointer; display: flex; align-items: center; font-size: 14px; color: var(--win10-text-on-dark); transition: all 0.15s ease-out; }
+.start-menu-power:hover { background-color: rgba(255, 255, 255, 0.1); }
+.start-menu-power .icon { margin-right: 12px; font-size: 18px; }
+.start-menu-main { flex-grow: 1; overflow-y: auto; padding: 16px; }
+.start-menu-main::-webkit-scrollbar { width: 6px; }
+.start-menu-main::-webkit-scrollbar-track { background: transparent; }
+.start-menu-main::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 3px; }
+.start-menu-pinned { display: grid; grid-template-columns: repeat(auto-fill, var(--tile-size)); grid-auto-rows: var(--tile-size); gap: 6px; }
+.app-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; cursor: pointer; transition: all 0.15s ease-out; color: var(--win10-text-on-dark); background-color: var(--win10-accent); text-align: center; }
+.app-tile:hover { filter: brightness(1.1); }
+.app-tile .icon { font-size: 24px; margin-bottom: 8px; }
+.app-tile .label { font-size: 12px; }
+.app-tile.tile-size-medium { grid-column: span 1; grid-row: span 1; }
+.app-tile.tile-size-wide { grid-column: span 2; grid-row: span 1; align-items: flex-start; justify-content: flex-end; text-align: left; }
+.app-tile.tile-size-large { grid-column: span 2; grid-row: span 2; }
+.app-tile.tile-size-large .icon { font-size: 36px; }
+
+/* --- Window Component & Animations --- */
+.window-component { position: fixed; min-width: 250px; min-height: 150px; background: var(--win10-window-bg); border: 1px solid #AAA; border-radius: var(--win10-border-radius); box-shadow: var(--win10-inactive-window-shadow); display: flex; flex-direction: column; overflow: hidden; opacity: 0.95; transition: opacity 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s ease-out, height 0.2s ease-out, top 0.2s ease-out, left 0.2s ease-out; }
+.window-component.opening { animation: windowOpen 0.2s cubic-bezier(0.1, 0.9, 0.2, 1); }
+.window-component.closing { animation: windowClose 0.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+.window-component.minimizing { transform-origin: bottom left; animation: windowMinimize 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.window-component.restoring { transform-origin: bottom left; animation: windowRestore 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes windowOpen { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 0.95; } }
+@keyframes windowClose { from { transform: scale(1); opacity: 1; } to { transform: scale(0.9); opacity: 0; } }
+@keyframes windowMinimize { from { transform: scale(1) translateY(0); opacity: 1; } to { transform: scale(0.1) translateY(200px); opacity: 0; } }
+@keyframes windowRestore { from { transform: scale(0.1) translateY(200px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.window-component.active { box-shadow: var(--win10-active-window-shadow); border-color: #555; opacity: 1; }
+.window-component.maximized, .window-component.snapped { border-radius: 0; border: none; transition: all 0.2s ease-out !important; }
+.window-component.is-dragging, .window-component.is-resizing { transition: none !important; opacity: 0.8 !important; }
+.title-bar { height: 32px; background-color: #F0F0F0; display: flex; align-items: center; padding: 0 4px 0 12px; cursor: grab; flex-shrink: 0; }
+.title-bar:active { cursor: grabbing; }
+.window-component.active .title-bar { background-color: #E6E6E6; }
+.window-component.maximized .title-bar, .window-component.snapped .title-bar { cursor: default; }
+.window-icon { font-size: 14px; margin-right: 8px; color: var(--win10-icon-color); pointer-events: none; }
+.title { flex-grow: 1; font-size: 13px; font-weight: 500; pointer-events: none; }
+.controls { margin-left: auto; display: flex; }
+.controls button { background: none; border: none; width: 46px; height: 32px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--win10-icon-color); transition: background-color 0.1s; }
+.controls button:hover { background-color: rgba(0,0,0,0.1); }
+.controls button.close:hover { background-color: #E81123; color: white; }
+.resize-handle { position: absolute; z-index: 10; }
+.resize-handle.t { top: 0; left: 8px; right: 8px; height: 5px; cursor: ns-resize; }
+.resize-handle.b { bottom: 0; left: 8px; right: 8px; height: 5px; cursor: ns-resize; }
+.resize-handle.l { top: 8px; bottom: 8px; left: 0; width: 5px; cursor: ew-resize; }
+.resize-handle.r { top: 8px; bottom: 8px; right: 0; width: 5px; cursor: ew-resize; }
+.resize-handle.tl { top: 0; left: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+.resize-handle.tr { top: 0; right: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.resize-handle.bl { bottom: 0; left: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.resize-handle.br { bottom: 0; right: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+
+/* --- Window Body & File Explorer (Updated) --- */
+.window-body { flex-grow: 1; position: relative; background: var(--win10-window-bg); display: flex; padding: 0; overflow: hidden; }
+.window-body[data-alt-bg="true"] { background: var(--win10-window-bg-alt); }
+.sidebar { width: 180px; background: var(--win10-sidebar-bg); flex-shrink: 0; padding: 8px; border-right: 1px solid #ddd; overflow-y: auto; }
+.sidebar-item { display: flex; align-items: center; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.sidebar-item:hover { background-color: #e0e0e0; }
+.sidebar-item.active { background-color: var(--win10-accent); color: white; }
+.sidebar-item i { width: 24px; text-align: center; margin-right: 8px; }
+.main-content { flex-grow: 1; padding: 8px; overflow: auto; }
+.file-explorer-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 16px; padding: 8px; }
+.file-item { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: var(--win10-border-radius); cursor: pointer; }
+.file-item:hover { background-color: #e0e0e0; }
+.file-item i { font-size: 28px; margin-bottom: 8px; color: var(--win10-accent); }
+.file-item span { font-size: 12px; text-align: center; word-break: break-word; }
+.text-content-body { padding: 8px; overflow: auto; width: 100%; }
+.iframe-container { width: 100%; height: 100%; position: relative; }
+.iframe-container iframe { width: 100%; height: 100%; border: none; visibility: hidden; }
+.iframe-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #888; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* --- Context Menu --- */
+.context-menu { position: fixed; z-index: 10001; min-width: 180px; background: var(--win10-context-menu-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform-origin: top left; animation: contextMenuOpen 0.1s ease-out; }
+@keyframes contextMenuOpen { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.context-menu-item { display: flex; align-items: center; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: var(--win10-border-radius); }
+.context-menu-item:hover { background-color: var(--win10-accent); color: var(--win10-text-on-dark); }
+.context-menu-item i { width: 24px; text-align: center; margin-right: 8px; font-size: 14px; }
+.context-menu-separator { height: 1px; background: rgba(0,0,0,0.1); margin: 6px 0; }
+
+/* --- Taskbar Peek Preview --- */
+#taskbar-peek-preview {
+    position: fixed;
+    bottom: 52px; /* taskbar height + margin */
+    background: rgba(242, 242, 242, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: var(--win10-border-radius);
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    animation: peekFadeIn 0.15s ease-out;
+    pointer-events: none;
+}
+#taskbar-peek-preview i { font-size: 20px; margin-right: 10px; color: #333; }
+@keyframes peekFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- Selection Marquee --- */
+#selection-marquee {
+    position: fixed;
+    border: 1px solid var(--win10-accent);
+    background-color: rgba(0, 120, 212, 0.3);
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* --- NEW: Aero Snap Preview --- */
+#snap-preview {
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    border-radius: var(--win10-border-radius);
+    z-index: 9998; /* Below active window, above desktop icons */
+    transition: opacity 0.2s ease-out, top 0.1s ease-out, left 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out;
+    pointer-events: none;
+    opacity: 0;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .desktop-icons-grid { grid-template-columns: repeat(auto-fill, 80px); grid-auto-rows: 80px; gap: 2px; }
+    .desktop-icon .icon { font-size: 28px; }
+    .desktop-icon .label { font-size: 11px; }
+    .taskbar { height: 44px; }
+    #system-tray .date { display: none; }
+    .start-menu { width: 420px; height: 500px; bottom: 48px; }
+    .start-menu-sidebar { width: 160px; }
+    :root { --tile-size: 80px; }
+    .window-component { min-width: 200px; min-height: 120px; }
+    .sidebar { width: 120px; }
+}
+@media (max-width: 480px) {
+    .desktop-icons-grid { grid-template-columns: repeat(4, 1fr); width: 100%; left: 0; padding: 4px; gap: 0; }
+    #start-button { padding: 0 12px; }
+    .start-menu { width: 100%; height: calc(100% - 44px); left: 0; bottom: 44px; border-radius: 0; flex-direction: column; }
+    .start-menu-sidebar { flex-direction: row; width: 100%; height: auto; align-items: center; }
+    .start-menu-power { margin-top: 0; margin-left: auto; }
+    #system-tray { display: none; }
+}

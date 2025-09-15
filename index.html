@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDesk 10 - 您的个人桌面</title>
+
+    <!-- Font Awesome CDN for Icons -->
+    <link crossorigin="anonymous" href="lib/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Login Screen: The initial view before entering the desktop -->
+<div id="login-screen">
+    <div class="login-box">
+        <!-- 使用一个简单的图标作为头像 -->
+        <i class="fas fa-user-circle avatar"></i>
+        <h2 class="username">访客</h2>
+        <button id="login-button">登录</button>
+    </div>
+</div>
+
+<!-- Desktop Wrapper: The main container for all desktop elements -->
+<div class="desktop-wrapper" id="desktop-wrapper">
+    <!-- Desktop Icons Grid: Icons will be dynamically generated here -->
+    <div class="desktop-icons-grid" id="desktop-icons-grid"></div>
+    <!-- Windows will be dynamically generated and appended here -->
+</div>
+
+<!-- Taskbar: Always visible at the bottom -->
+<div class="taskbar" id="taskbar">
+    <div id="start-button" title="开始">
+        <i class="fab fa-windows"></i>
+    </div>
+    <!-- Running Apps Area: Taskbar icons for open windows -->
+    <div id="running-apps"></div>
+    <!-- System Tray: Displays current time and date -->
+    <div id="system-tray">
+        <div id="current-time"></div>
+        <div id="current-date"></div>
+    </div>
+</div>
+
+<!-- Start Menu: Hidden by default -->
+<div class="start-menu" id="start-menu">
+    <!-- NEW: Left sidebar for user/power controls -->
+    <div class="start-menu-sidebar">
+        <div class="start-menu-header">
+            <i class="fas fa-user-circle profile-icon"></i>
+            <div class="user-name">访客</div>
+        </div>
+        <div class="start-menu-power" title="这是一个演示功能">
+            <i class="fas fa-power-off icon"></i>
+            <span>电源</span>
+        </div>
+    </div>
+    <!-- NEW: Main content area for pinned tiles -->
+    <div class="start-menu-main">
+        <!-- Pinned App Tiles: Will be populated by JS -->
+        <div class="start-menu-pinned" id="start-menu-pinned"></div>
+    </div>
+</div>
+
+<!-- Context Menu will be dynamically created and appended by JS -->
+
+<!-- Load JavaScript modules in order -->
+<script src="js/config.js" type="module"></script>
+<script src="js/Window.js" type="module"></script>
+<script src="js/main.js" type="module"></script>
+
+</body>
+</html>
